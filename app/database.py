@@ -1,11 +1,15 @@
 """Conexión a MySQL con SQLAlchemy.
 Las tablas ya existen: se crean ejecutando sql/pizzeria.sql."""
+
+import os
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 from app.config import DATABASE_URL
 
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+connect_args = {"ssl": {"fake_flag_to_enable_tls": True}} if os.getenv("DB_SSL") == "true" else {}
+engine = create_engine(DATABASE_URL, pool_pre_ping=True, connect_args=connect_args)
 SessionLocal = sessionmaker(bind=engine, autoflush=False)
 
 
@@ -20,3 +24,4 @@ def get_db():
         yield db
     finally:
         db.close()
+        
