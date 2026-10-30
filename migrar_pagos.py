@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pymysql
 
-host = input("Host [pizerria-pizeria.f.aivencloud.com]: ") or "pizerria-pizeria.f.aivencloud.com"
+host = input("Host [pizzeria-pizeria.f.aivencloud.com]: ") or "pizzeria-pizeria.f.aivencloud.com"
 puerto = int(input("Puerto [24373]: ") or 24373)
 usuario = input("Usuario [avnadmin]: ") or "avnadmin"
 base = input("Base de datos [defaultdb]: ") or "defaultdb"
