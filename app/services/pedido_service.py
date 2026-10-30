@@ -1,8 +1,7 @@
 """Reglas de negocio de los pedidos (ver contrato de API)."""
 from datetime import date
 from decimal import Decimal
-
-from sqlalchemy import exists, select, update
+from sqlalchemy import exists, func, select, update
 from sqlalchemy.orm import Session, selectinload
 
 from app.errores import ApiError
@@ -187,3 +186,20 @@ def entregar_pedido(db: Session, pedido_id: int, usuario: Usuario) -> Pedido:
                        f"El pedido {pedido_id} no está en estado 'listo' (solo se entrega lo que está listo)")
     db.commit()
     return db.get(Pedido, pedido_id)
+
+    def historial_pedidos(db: Session, estados: list[EstadoPedido], desde: date | None,
+                      hasta: date | None, limite: int, offset: int):
+    filtros = []
+    if estados:
+        filtros.append(Pedido.estado.in_(estados))
+    if desde:
+        filtros.append(Pedido.fecha_creacion >= rango_dia(desde)[0])
+    if hasta:
+        filtros.append(Pedido.fecha_creacion < rango_dia(hasta)[1])
+    total = db.scalar(select(func.count()).select_from(Pedido).where(*filtros))
+    pedidos = list(db.scalars(
+        consulta_pedidos().where(*filtros)
+        .order_by(Pedido.fecha_creacion.desc(), Pedido.id.desc())
+        .limit(limite).offset(offset)
+    ).all())
+    return total, pedidos

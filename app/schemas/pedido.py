@@ -104,3 +104,7 @@ class EntregaOut(BaseModel):
     id: int
     estado: EstadoPedido
     fecha_entrega: datetime
+
+class HistorialPedidosOut(BaseModel):
+    total: int
+    pedidos: list[PedidoListado]

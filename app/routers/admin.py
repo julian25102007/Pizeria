@@ -1,17 +1,20 @@
 from sqlalchemy import func, select
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.errores import ApiError
 from app.models import HistorialPrecio, Ingrediente, Producto, Usuario
-from app.models.enums import Rol, TipoReferencia
+from app.models.enums import EstadoPedido, Rol, TipoReferencia
 from app.schemas.admin import (CambioHistorial, CambioPrecioOut, EliminadoOut, EstadisticasOut,
                                HistorialOut, IngredienteIn, PrecioIngredienteIn,
                                PrecioProductoIn, ProductoIn)
 from app.schemas.comun import IdNombre, IdNombreExtra
+from app.schemas.pedido import HistorialPedidosOut, ItemResumen, PedidoListado
 from app.schemas.producto import ProductoDetalle
 from app.seguridad import requiere_rol
-from app.services import catalogo_service, estadisticas_service, precio_service
+from app.services import (catalogo_service, estadisticas_service, pedido_service,
+                          precio_service)
 from app.tiempo import parsear_fecha
 
 router = APIRouter(prefix="/admin", tags=["Administrador"])
@@ -88,3 +91,35 @@ def eliminar_ingrediente(ingrediente_id: int, db: Session = Depends(get_db),
                          _: Usuario = Depends(solo_admin)):
     i = catalogo_service.eliminar_ingrediente(db, ingrediente_id)
     return EliminadoOut(id=i.id, nombre=i.nombre, activo=i.activo)
+
+@router.get("/pedidos", response_model=HistorialPedidosOut)
+def historial_pedidos(
+    estado: str | None = None,
+    desde: str | None = None,
+    hasta: str | None = None,
+    limite: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db),
+    _: Usuario = Depends(solo_admin),
+):
+    """estado: pendiente | listo | entregado (varios separados por coma). Fechas YYYY-MM-DD."""
+    estados = []
+    if estado:
+        try:
+            estados = [EstadoPedido(p.strip()) for p in estado.split(",")]
+        except ValueError:
+            raise ApiError(400, "ESTADO_INVALIDO",
+                           "estado debe ser pendiente, listo o entregado (separados por coma)")
+    d = parsear_fecha(desde) if desde else None
+    h = parsear_fecha(hasta) if hasta else None
+    if d and h and d > h:
+        raise ApiError(400, "RANGO_INVALIDO", "desde no puede ser mayor que hasta")
+    total, pedidos = pedido_service.historial_pedidos(db, estados, d, h, limite, offset)
+    return HistorialPedidosOut(total=total, pedidos=[
+        PedidoListado(
+            id=p.id, nombre_cliente=p.nombre_cliente, estado=p.estado, total=p.total,
+            fecha_creacion=p.fecha_creacion, fecha_listo=p.fecha_listo,
+            fecha_entrega=p.fecha_entrega,
+            items=[ItemResumen(nombre=x.producto.nombre, cantidad=x.cantidad) for x in p.detalles],
+        ) for p in pedidos
+    ])
