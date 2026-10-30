@@ -12,7 +12,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.database import Base, get_db
 from app.main import app
-from app import models  # noqa: F401  (registra las tablas)
+from app import models
 
 SQL = Path(__file__).resolve().parent.parent / "sql" / "pizzeria.sql"
 
@@ -33,12 +33,12 @@ def _recargar_mysql():
         while cur.nextset():
             pass
     con.close()
-    engine.dispose()  # las conexiones viejas apuntaban a la base borrada
+    engine.dispose()
 
 
 @pytest.fixture()
 def client():
-    # PROBAR_CON_MYSQL=1 -> usa tu MySQL real (según el .env); si no, SQLite en memoria
+
     if os.getenv("PROBAR_CON_MYSQL"):
         _recargar_mysql()
         yield TestClient(app)

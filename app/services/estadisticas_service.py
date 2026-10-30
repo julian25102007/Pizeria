@@ -23,7 +23,7 @@ def estadisticas_del_dia(db: Session, dia: date) -> dict:
         .join(Producto, Producto.id == DetallePedido.producto_id)
         .where(*cuando)
         .group_by(Producto.id, Producto.nombre)
-        .order_by(desc("unidades"), Producto.id)  # en empate, el primero (menor id)
+        .order_by(desc("unidades"), Producto.id)
         .limit(1)
     ).first()
 

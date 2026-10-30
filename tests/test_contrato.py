@@ -14,7 +14,7 @@ def codigo(r):
     return r.json()["error"]["codigo"]
 
 
-# ------------------------------------------------------------------ auth
+
 def test_login(client):
     r = client.post("/api/auth/login", json={"usuario": "admin", "password": "admin123"})
     assert r.status_code == 200
@@ -28,7 +28,7 @@ def test_login_errores(client):
     r = client.post("/api/auth/login", json={"usuario": "admin", "password": "mala"})
     assert r.status_code == 401 and codigo(r) == "CREDENCIALES_INVALIDAS"
     r2 = client.post("/api/auth/login", json={"usuario": "nadie", "password": "x"})
-    assert r.json() == r2.json()  # mismo mensaje para ambos casos
+    assert r.json() == r2.json()
     assert client.post("/api/auth/login", json={"usuario": "admin"}).status_code == 400
     r = client.post("/api/auth/login", content="{esto no es json", headers={"Content-Type": "application/json"})
     assert r.status_code == 400 and codigo(r) == "JSON_INVALIDO"
@@ -49,7 +49,7 @@ def test_error_en_rutas_inexistentes(client):
     assert r.status_code == 404 and set(r.json()["error"]) == {"codigo", "mensaje"}
 
 
-# ------------------------------------------------------------------ cliente
+
 def test_menu_producto_ingredientes(client):
     productos = client.get("/api/menu").json()["productos"]
     assert len(productos) == 8
@@ -69,33 +69,33 @@ def test_menu_producto_ingredientes(client):
     assert len(ings) == 16 and {"id": 16, "nombre": "Tocino", "precio_extra": 20.0} in ings
 
 
-# ------------------------------------------------------------------ flujo completo
+
 def test_flujo_completo(client, tokens):
-    # crear pedido
+
     r = client.post("/api/pedidos", json=PEDIDO_ANA)
     assert r.status_code == 201
     p = r.json()
     assert p["estado"] == "pendiente" and p["total"] == 215.0
-    assert "." not in p["fecha_creacion"]  # sin fracciones de segundo
+    assert "." not in p["fecha_creacion"]
     mex, ref = p["items"]
     assert mex["precio_unitario"] == 165.0 and mex["ingredientes_quitados"] == [{"id": 8, "nombre": "Cebolla"}]
     assert mex["ingredientes_agregados"] == [{"id": 16, "nombre": "Tocino", "precio_extra": 20.0}]
     assert ref["cantidad"] == 2 and ref["precio_unitario"] == 25.0 and ref["ingredientes_quitados"] == []
 
-    # seguimiento del cliente
+
     est = client.get(f"/api/pedidos/{p['id']}/estado").json()
     assert [i["estado_cocina"] for i in est["items"]] == ["pendiente", "lista"]
     r = client.get("/api/pedidos/999/estado")
     assert r.status_code == 404 and codigo(r) == "PEDIDO_NO_ENCONTRADO"
 
-    # cocina
+
     cola = client.get("/api/cocina/cola", headers=tokens["cocina"]).json()["cola"]
     assert len(cola) == 1
     item = cola[0]
     assert item["pizza"] == "Mexicana" and item["quitados"] == [{"id": 8, "nombre": "Cebolla"}]
     assert [i["id"] for i in item["ingredientes"]] == [1, 2, 6, 7, 16]
 
-    # recepción: todavía no hay pedidos listos
+
     assert client.get("/api/pedidos", headers=tokens["recepcion"]).json() == {"pedidos": []}
     r = client.patch(f"/api/pedidos/{p['id']}/entregar", headers=tokens["recepcion"])
     assert r.status_code == 409 and codigo(r) == "PEDIDO_NO_LISTO"
@@ -112,7 +112,7 @@ def test_flujo_completo(client, tokens):
     assert r.status_code == 200 and r.json()["estado"] == "entregado" and r.json()["fecha_entrega"]
     assert codigo(client.patch(f"/api/pedidos/{p['id']}/entregar", headers=tokens["recepcion"])) == "PEDIDO_NO_LISTO"
 
-    # estadísticas
+
     e = client.get("/api/admin/estadisticas", headers=tokens["admin"]).json()
     assert e["ventas_dia"] == {"num_pedidos": 1, "total_ventas": 215.0}
     assert e["producto_mas_vendido"] == {"id": 7, "nombre": "Refresco", "unidades": 2}
@@ -134,7 +134,7 @@ def test_pedido_solo_bebidas_nace_listo(client, tokens):
     assert len(client.get("/api/pedidos", headers=tokens["recepcion"]).json()["pedidos"]) == 1
 
 
-# ------------------------------------------------------------------ validaciones (422)
+
 @pytest.mark.parametrize("cuerpo,esperado", [
     ({"items": [{"producto_id": 1}]}, "NOMBRE_INVALIDO"),
     ({"nombre_cliente": "  ", "items": [{"producto_id": 1}]}, "NOMBRE_INVALIDO"),
@@ -163,7 +163,7 @@ def test_pedido_con_error_no_guarda_nada(client, tokens):
     assert e["ventas_dia"]["num_pedidos"] == 0 and e["producto_mas_vendido"] is None
 
 
-# ------------------------------------------------------------------ cocina (errores)
+
 def test_cocina_errores(client, tokens):
     p = client.post("/api/pedidos", json=PEDIDO_ANA).json()
     pizza, bebida = p["items"][0]["item_id"], p["items"][1]["item_id"]
@@ -178,7 +178,7 @@ def test_cocina_errores(client, tokens):
     assert client.get("/api/cocina/cola", headers=c).json() == {"cola": []}
 
 
-# ------------------------------------------------------------------ recepción (filtros)
+
 def test_filtros_pedidos(client, tokens):
     h = tokens["recepcion"]
     r = client.get("/api/pedidos?estado=pendiente", headers=h)
@@ -191,7 +191,7 @@ def test_filtros_pedidos(client, tokens):
     assert client.get("/api/pedidos?fecha=2020-01-01", headers=h).json()["pedidos"] == []
 
 
-# ------------------------------------------------------------------ administrador
+
 def test_precios_e_historial(client, tokens):
     a = tokens["admin"]
     viejo = client.post("/api/pedidos", json=PEDIDO_ANA).json()
@@ -201,9 +201,9 @@ def test_precios_e_historial(client, tokens):
     r = client.put("/api/admin/ingredientes/16/precio", json={"precio_extra": 25.00}, headers=a)
     assert r.json() == {"id": 16, "nombre": "Tocino", "precio_anterior": 20.0, "precio_nuevo": 25.0}
 
-    # el pedido ya hecho conserva su precio
+
     assert client.get(f"/api/pedidos/{viejo['id']}/estado").json()["total"] == 215.0
-    # uno nuevo usa el precio nuevo: 150 + 25 + 2*25 = 225
+
     assert client.post("/api/pedidos", json=PEDIDO_ANA).json()["total"] == 225.0
 
     for ruta, cuerpo in [("productos/4", {"precio": 0}), ("productos/4", {"precio": -5}),

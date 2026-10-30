@@ -21,5 +21,5 @@ SECRET_KEY = os.getenv("SECRET_KEY", "cambia-esta-clave")
 ALGORITHM = "HS256"
 TOKEN_MINUTES = int(os.getenv("TOKEN_MINUTES", "480"))
 
-# Orígenes permitidos por CORS (separados por coma). "*" = cualquiera (desarrollo).
+
 CORS_ORIGINS = [o.strip() for o in os.getenv("CORS_ORIGINS", "*").split(",") if o.strip()]

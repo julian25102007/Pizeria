@@ -16,5 +16,5 @@ class UsuarioLogin(BaseModel):
 
 class LoginOut(BaseModel):
     token: str
-    expira_en: int  # segundos
+    expira_en: int
     usuario: UsuarioLogin

@@ -29,14 +29,14 @@ def obtener_pedido(db: Session, pedido_id: int) -> Pedido:
     return pedido
 
 
-# ---------------------------------------------------------------- crear
+
 def crear_pedido(db: Session, datos: PedidoIn) -> Pedido:
     """Crea pedido + items + cambios de ingredientes en UNA transacción.
     El cliente nunca envía precios: se calculan con los precios actuales."""
     nombre = (datos.nombre_cliente or "").strip()
     if not nombre or len(nombre) > 80:
         raise ApiError(422, "NOMBRE_INVALIDO",
-                       "El nombre del cliente es obligatorio y debe tener máximo 80 caracteres")
+                    "El nombre del cliente es obligatorio y debe tener máximo 80 caracteres")
     if not datos.items:
         raise ApiError(422, "PEDIDO_VACIO", "El pedido debe tener al menos un producto")
 
@@ -48,7 +48,7 @@ def crear_pedido(db: Session, datos: PedidoIn) -> Pedido:
         producto = db.get(Producto, item.producto_id)
         if producto is None or not producto.activo:
             raise ApiError(422, "PRODUCTO_NO_DISPONIBLE",
-                           f"El producto {item.producto_id} no existe o no está disponible")
+                        f"El producto {item.producto_id} no existe o no está disponible")
 
         es_pizza = producto.tipo == TipoProducto.pizza
         cantidad_valida = item.cantidad == 1 if es_pizza else 1 <= item.cantidad <= 10
@@ -91,9 +91,9 @@ def crear_pedido(db: Session, datos: PedidoIn) -> Pedido:
                                     precio_extra=ing.precio_extra)
                 )
         else:
-            detalle.estado_cocina = EstadoCocina.lista  # las bebidas no pasan por cocina
+            detalle.estado_cocina = EstadoCocina.lista
 
-        # precio_unitario = precio del producto + extras de lo agregado
+
         detalle.precio_unitario = producto.precio + extras
         total += detalle.precio_unitario * item.cantidad
         pedido.detalles.append(detalle)
@@ -101,7 +101,7 @@ def crear_pedido(db: Session, datos: PedidoIn) -> Pedido:
     pedido.total = total
     if hay_pizzas:
         pedido.estado = EstadoPedido.pendiente
-    else:  # solo bebidas: nace listo
+    else:
         pedido.estado = EstadoPedido.listo
         pedido.fecha_listo = pedido.fecha_creacion
 
@@ -110,7 +110,7 @@ def crear_pedido(db: Session, datos: PedidoIn) -> Pedido:
     return obtener_pedido(db, pedido.id)
 
 
-# ---------------------------------------------------------------- cocina
+
 def cola_cocina(db: Session) -> list[DetallePedido]:
     """Pizzas pendientes, la más antigua primero."""
     consulta = (
@@ -142,7 +142,7 @@ def marcar_pizza_lista(db: Session, item_id: int) -> DetallePedido:
     detalle.estado_cocina = EstadoCocina.lista
     db.flush()
 
-    # Cierra el pedido solo si ya no quedan pizzas pendientes (consulta del contrato)
+
     db.execute(
         update(Pedido)
         .where(
@@ -158,7 +158,7 @@ def marcar_pizza_lista(db: Session, item_id: int) -> DetallePedido:
     return db.get(DetallePedido, item_id)
 
 
-# ---------------------------------------------------------------- recepción
+
 def listar_pedidos(db: Session, estados: list[EstadoPedido], dia: date) -> list[Pedido]:
     inicio, fin = rango_dia(dia)
     consulta = (

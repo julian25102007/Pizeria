@@ -14,7 +14,7 @@ class HistorialPrecio(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     tipo: Mapped[TipoReferencia] = mapped_column(columna_enum(TipoReferencia))
-    referencia_id: Mapped[int] = mapped_column()  # id del producto o del ingrediente
+    referencia_id: Mapped[int] = mapped_column()
     precio_anterior: Mapped[Decimal] = mapped_column(Numeric(8, 2))
     precio_nuevo: Mapped[Decimal] = mapped_column(Numeric(8, 2))
     usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"))

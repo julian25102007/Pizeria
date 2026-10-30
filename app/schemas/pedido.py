@@ -6,9 +6,9 @@ from app.models.enums import EstadoCocina, EstadoPedido
 from app.schemas.comun import Dinero, IdNombre, IdNombreExtra
 
 
-# ---------- POST /pedidos (entrada) ----------
-# Las reglas de negocio (nombre, items vacíos, cantidades...) se validan en el
-# servicio para devolver 422 con el código del contrato.
+
+
+
 class ItemIn(BaseModel):
     producto_id: int
     cantidad: int = 1
@@ -21,7 +21,7 @@ class PedidoIn(BaseModel):
     items: list[ItemIn] = []
 
 
-# ---------- POST /pedidos (respuesta 201) ----------
+
 class ItemCreado(BaseModel):
     item_id: int
     producto_id: int
@@ -41,7 +41,7 @@ class PedidoCreado(BaseModel):
     items: list[ItemCreado]
 
 
-# ---------- GET /pedidos/{id}/estado ----------
+
 class ItemEstado(BaseModel):
     nombre: str
     cantidad: int
@@ -56,14 +56,14 @@ class PedidoEstadoOut(BaseModel):
     items: list[ItemEstado]
 
 
-# ---------- cocina ----------
+
 class ItemCola(BaseModel):
     item_id: int
     pedido_id: int
     nombre_cliente: str
     pizza: str
     fecha_creacion: datetime
-    ingredientes: list[IdNombre]  # receta base - quitados + agregados
+    ingredientes: list[IdNombre]
     quitados: list[IdNombre]
     agregados: list[IdNombre]
 
@@ -79,7 +79,7 @@ class ItemListaOut(BaseModel):
     pedido_estado: EstadoPedido
 
 
-# ---------- recepcionista ----------
+
 class ItemResumen(BaseModel):
     nombre: str
     cantidad: int

@@ -7,14 +7,14 @@ from app.errores import ApiError
 from app.models import HistorialPrecio, Ingrediente, Producto, Usuario
 from app.models.enums import TipoReferencia
 
-MAXIMO = Decimal("999999.99")  # DECIMAL(8,2)
+MAXIMO = Decimal("999999.99")
 
 
 def _validar(valor: Decimal, permite_cero: bool, campo: str) -> None:
     try:
         valido = (
             valor.is_finite()
-            and valor == valor.quantize(Decimal("0.01"))  # máximo 2 decimales
+            and valor == valor.quantize(Decimal("0.01"))
             and valor <= MAXIMO
             and (valor >= 0 if permite_cero else valor > 0)
         )

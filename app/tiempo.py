@@ -1,4 +1,3 @@
-"""Fechas: formato ISO 8601 sin fracciones de segundo, como en el contrato."""
 from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 

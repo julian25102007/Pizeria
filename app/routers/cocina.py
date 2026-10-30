@@ -20,7 +20,7 @@ def cola(db: Session = Depends(get_db), _: Usuario = Depends(solo_cocinero)):
         quitados = [p.ingrediente for p in d.personalizaciones if p.accion == Accion.quitado]
         agregados = [p.ingrediente for p in d.personalizaciones if p.accion == Accion.agregado]
         ids_quitados = {i.id for i in quitados}
-        # lista final = receta base - quitados + agregados
+
         finales = [i for i in sorted(d.producto.ingredientes, key=lambda i: i.id)
                    if i.id not in ids_quitados] + sorted(agregados, key=lambda i: i.id)
         cola.append(ItemCola(

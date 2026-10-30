@@ -13,7 +13,7 @@ from app.errores import ApiError
 from app.models import Usuario
 from app.models.enums import Rol
 
-# Authorization: Bearer <token>
+
 esquema_bearer = HTTPBearer(auto_error=False)
 
 

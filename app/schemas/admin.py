@@ -7,7 +7,7 @@ from app.models.enums import TipoProducto, TipoReferencia
 from app.schemas.comun import Dinero
 
 
-# El rango/valor del precio se valida en el servicio (422 PRECIO_INVALIDO)
+
 class PrecioProductoIn(BaseModel):
     precio: Decimal
 

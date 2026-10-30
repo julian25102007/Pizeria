@@ -15,7 +15,7 @@ app.add_middleware(
 )
 registrar_manejadores(app)
 
-# Todos los endpoints llevan el prefijo /api (contrato de API)
+
 for router in (auth.router, menu.router, pedidos.router, cocina.router, admin.router):
     app.include_router(router, prefix="/api")
 

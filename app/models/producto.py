@@ -6,7 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 from app.models.enums import TipoProducto, columna_enum
 
-# Receta base de cada pizza (tabla intermedia muchos a muchos)
+
 producto_ingredientes = Table(
     "producto_ingredientes",
     Base.metadata,

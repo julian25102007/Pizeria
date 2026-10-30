@@ -35,7 +35,7 @@ def detalle_producto(producto_id: int, db: Session = Depends(get_db)):
     ).first()
     if producto is None or not producto.activo:
         raise ApiError(404, "PRODUCTO_NO_ENCONTRADO", f"No existe el producto {producto_id}")
-    base = sorted(producto.ingredientes, key=lambda i: i.id)  # bebidas: lista vacía
+    base = sorted(producto.ingredientes, key=lambda i: i.id)
     return ProductoDetalle(**_producto_menu(producto),
                            ingredientes_base=[IdNombre(id=i.id, nombre=i.nombre) for i in base])
 

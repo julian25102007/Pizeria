@@ -1,12 +1,4 @@
--- =====================================================
--- Sistema de pedidos de pizzería (sin envíos)
--- Base de datos MySQL 8.x
--- =====================================================
 
-
--- -----------------------------------------------------
--- Usuarios del personal (el cliente NO tiene cuenta)
--- -----------------------------------------------------
 CREATE TABLE usuarios (
     id            INT AUTO_INCREMENT PRIMARY KEY,
     nombre        VARCHAR(100) NOT NULL,
@@ -16,9 +8,7 @@ CREATE TABLE usuarios (
     activo        BOOLEAN NOT NULL DEFAULT TRUE
 );
 
--- -----------------------------------------------------
--- Menú: pizzas y bebidas
--- -----------------------------------------------------
+
 CREATE TABLE productos (
     id          INT AUTO_INCREMENT PRIMARY KEY,
     nombre      VARCHAR(80)  NOT NULL UNIQUE,
@@ -29,7 +19,7 @@ CREATE TABLE productos (
     activo      BOOLEAN NOT NULL DEFAULT TRUE
 );
 
--- Lista fija de ingredientes que el cliente puede agregar
+
 CREATE TABLE ingredientes (
     id           INT AUTO_INCREMENT PRIMARY KEY,
     nombre       VARCHAR(60)  NOT NULL UNIQUE,
@@ -46,11 +36,9 @@ CREATE TABLE producto_ingredientes (
     FOREIGN KEY (ingrediente_id) REFERENCES ingredientes(id) ON DELETE CASCADE
 );
 
--- -----------------------------------------------------
--- Pedidos
--- -----------------------------------------------------
+
 CREATE TABLE pedidos (
-    id             INT AUTO_INCREMENT PRIMARY KEY,   -- también es el número de pedido
+    id             INT AUTO_INCREMENT PRIMARY KEY,  
     nombre_cliente VARCHAR(80) NOT NULL,
     estado         ENUM('pendiente', 'listo', 'entregado') NOT NULL DEFAULT 'pendiente',
     total          DECIMAL(10,2) NOT NULL,
@@ -63,7 +51,7 @@ CREATE TABLE pedidos (
     INDEX idx_pedidos_fecha (fecha_creacion)
 );
 
--- Cada pizza personalizada es una fila (cantidad = 1); las bebidas pueden llevar cantidad > 1
+
 CREATE TABLE pedido_items (
     id              INT AUTO_INCREMENT PRIMARY KEY,
     pedido_id       INT NOT NULL,
@@ -76,7 +64,7 @@ CREATE TABLE pedido_items (
     INDEX idx_items_estado (estado_cocina)
 );
 
--- Solo guarda los CAMBIOS hechos a la receta base
+
 CREATE TABLE pedido_item_ingredientes (
     id             INT AUTO_INCREMENT PRIMARY KEY,
     item_id        INT NOT NULL,
@@ -88,13 +76,11 @@ CREATE TABLE pedido_item_ingredientes (
     FOREIGN KEY (ingrediente_id) REFERENCES ingredientes(id)
 );
 
--- -----------------------------------------------------
--- Historial de cambios de precio (administrador)
--- -----------------------------------------------------
+
 CREATE TABLE historial_precios (
     id              INT AUTO_INCREMENT PRIMARY KEY,
     tipo            ENUM('producto', 'ingrediente') NOT NULL,
-    referencia_id   INT NOT NULL,                    -- id del producto o del ingrediente
+    referencia_id   INT NOT NULL,                    
     precio_anterior DECIMAL(8,2) NOT NULL,
     precio_nuevo    DECIMAL(8,2) NOT NULL,
     usuario_id      INT NOT NULL,
@@ -102,11 +88,9 @@ CREATE TABLE historial_precios (
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
 );
 
--- =====================================================
--- DATOS PRECARGADOS
--- =====================================================
 
--- Contraseñas de prueba (bcrypt): admin123 / recepcion123 / cocina123
+
+
 INSERT INTO usuarios (nombre, usuario, password_hash, rol) VALUES
 ('Administrador', 'admin',     '$2b$10$PC0MEYwRxQGNWbIOezi6zeI9IwzYhTBkljdwSM4MsjLOaNwYJpX/S', 'administrador'),
 ('Recepcionista', 'recepcion', '$2b$10$lc8tHSsRlUS2DVsBVi7dxeg4A9Ym8N6W8x5mj9mlNNLOBcYwWw2xO', 'recepcionista'),

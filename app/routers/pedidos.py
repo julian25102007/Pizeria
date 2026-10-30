@@ -16,7 +16,7 @@ from app.tiempo import parsear_fecha
 router = APIRouter(prefix="/pedidos", tags=["Pedidos"])
 
 
-# ---------------------------------------------------------------- cliente
+
 @router.post("", response_model=PedidoCreado, status_code=201, tags=["Cliente (público)"])
 def crear_pedido(datos: PedidoIn, db: Session = Depends(get_db)):
     pedido = pedido_service.crear_pedido(db, datos)
@@ -26,9 +26,9 @@ def crear_pedido(datos: PedidoIn, db: Session = Depends(get_db)):
             item_id=d.id, producto_id=d.producto_id, nombre=d.producto.nombre,
             cantidad=d.cantidad, precio_unitario=d.precio_unitario,
             ingredientes_quitados=[IdNombre(id=p.ingrediente_id, nombre=p.ingrediente.nombre)
-                                   for p in d.personalizaciones if p.accion == Accion.quitado],
+                                for p in d.personalizaciones if p.accion == Accion.quitado],
             ingredientes_agregados=[IdNombreExtra(id=p.ingrediente_id, nombre=p.ingrediente.nombre,
-                                                  precio_extra=p.precio_extra)
+                                                precio_extra=p.precio_extra)
                                     for p in d.personalizaciones if p.accion == Accion.agregado],
         ))
     return PedidoCreado(id=pedido.id, nombre_cliente=pedido.nombre_cliente, estado=pedido.estado,
@@ -41,11 +41,11 @@ def estado_pedido(pedido_id: int, db: Session = Depends(get_db)):
     return PedidoEstadoOut(
         id=pedido.id, nombre_cliente=pedido.nombre_cliente, estado=pedido.estado, total=pedido.total,
         items=[ItemEstado(nombre=d.producto.nombre, cantidad=d.cantidad, estado_cocina=d.estado_cocina)
-               for d in pedido.detalles],
+            for d in pedido.detalles],
     )
 
 
-# ---------------------------------------------------------------- recepcionista
+
 @router.get("", response_model=PedidosOut, tags=["Recepcionista"])
 def listar_pedidos(
     estado: str = "listo",

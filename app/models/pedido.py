@@ -14,7 +14,7 @@ from app.tiempo import ahora
 class Pedido(Base):
     __tablename__ = "pedidos"
 
-    id: Mapped[int] = mapped_column(primary_key=True)  # también es el número de pedido
+    id: Mapped[int] = mapped_column(primary_key=True)
     nombre_cliente: Mapped[str] = mapped_column(String(80))
     estado: Mapped[EstadoPedido] = mapped_column(
         columna_enum(EstadoPedido), default=EstadoPedido.pendiente
