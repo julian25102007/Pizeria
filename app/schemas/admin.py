@@ -3,7 +3,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel
 
-from app.models.enums import TipoReferencia
+from app.models.enums import TipoProducto, TipoReferencia
 from app.schemas.comun import Dinero
 
 
@@ -53,3 +53,22 @@ class EstadisticasOut(BaseModel):
     fecha: str
     ventas_dia: VentasDia
     producto_mas_vendido: ProductoMasVendido | None
+
+class ProductoIn(BaseModel):
+    nombre: str
+    descripcion: str | None = None
+    tipo: TipoProducto = TipoProducto.pizza
+    precio: Decimal
+    imagen_url: str | None = None
+    ingredientes_base: list[int] = []
+
+
+class IngredienteIn(BaseModel):
+    nombre: str
+    precio_extra: Decimal = Decimal("0")
+
+
+class EliminadoOut(BaseModel):
+    id: int
+    nombre: str
+    activo: bool
