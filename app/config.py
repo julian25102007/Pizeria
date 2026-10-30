@@ -23,3 +23,6 @@ TOKEN_MINUTES = int(os.getenv("TOKEN_MINUTES", "480"))
 
 
 CORS_ORIGINS = [o.strip() for o in os.getenv("CORS_ORIGINS", "*").split(",") if o.strip()]
+
+# Minutos estimados de cocina por pizza en espera (para el "tiempo de espera" del cliente)
+MIN_POR_PIZZA = int(os.getenv("MIN_POR_PIZZA", "8"))

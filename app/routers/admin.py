@@ -1,3 +1,5 @@
+from datetime import date, timedelta
+
 from sqlalchemy import func, select
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
@@ -7,8 +9,9 @@ from app.errores import ApiError
 from app.models import HistorialPrecio, Ingrediente, Producto, Usuario
 from app.models.enums import EstadoPedido, Rol, TipoReferencia
 from app.schemas.admin import (CambioHistorial, CambioPrecioOut, EliminadoOut, EstadisticasOut,
-                               HistorialOut, IngredienteIn, PrecioIngredienteIn,
-                               PrecioProductoIn, ProductoIn)
+                               HistorialOut, IngredienteIn, PedidosPorEstadoOut,
+                               PrecioIngredienteIn, PrecioProductoIn, ProductoIn,
+                               ProductosVendidosOut, VentasPorDiaOut, VentasPorHoraOut)
 from app.schemas.comun import IdNombre, IdNombreExtra
 from app.schemas.pedido import HistorialPedidosOut, ItemResumen, PedidoListado
 from app.schemas.producto import ProductoDetalle
@@ -121,5 +124,52 @@ def historial_pedidos(
             fecha_creacion=p.fecha_creacion, fecha_listo=p.fecha_listo,
             fecha_entrega=p.fecha_entrega,
             items=[ItemResumen(nombre=x.producto.nombre, cantidad=x.cantidad) for x in p.detalles],
+            pagado=p.pagado, fecha_pago=p.fecha_pago,
         ) for p in pedidos
     ])
+
+
+# ---------------------------------------------------------------- datos para gráficas
+def _rango(desde: str | None, hasta: str | None) -> tuple[date, date]:
+    """Por defecto: los últimos 7 días (incluido hoy). Máximo 366 días."""
+    h = parsear_fecha(hasta)
+    d = parsear_fecha(desde) if desde else h - timedelta(days=6)
+    if d > h:
+        raise ApiError(400, "RANGO_INVALIDO", "desde no puede ser mayor que hasta")
+    if (h - d).days > 366:
+        raise ApiError(400, "RANGO_INVALIDO", "El rango máximo es de 366 días")
+    return d, h
+
+
+@router.get("/estadisticas/ventas-por-dia", response_model=VentasPorDiaOut)
+def ventas_por_dia(desde: str | None = None, hasta: str | None = None, solo_pagados: bool = True,
+                   db: Session = Depends(get_db), _: Usuario = Depends(solo_admin)):
+    d, h = _rango(desde, hasta)
+    return VentasPorDiaOut(desde=d.isoformat(), hasta=h.isoformat(), solo_pagados=solo_pagados,
+                           dias=estadisticas_service.ventas_por_dia(db, d, h, solo_pagados))
+
+
+@router.get("/estadisticas/productos-vendidos", response_model=ProductosVendidosOut)
+def productos_vendidos(desde: str | None = None, hasta: str | None = None, solo_pagados: bool = True,
+                       limite: int = Query(10, ge=1, le=50),
+                       db: Session = Depends(get_db), _: Usuario = Depends(solo_admin)):
+    d, h = _rango(desde, hasta)
+    return ProductosVendidosOut(
+        desde=d.isoformat(), hasta=h.isoformat(), solo_pagados=solo_pagados,
+        productos=estadisticas_service.productos_vendidos(db, d, h, solo_pagados, limite))
+
+
+@router.get("/estadisticas/ventas-por-hora", response_model=VentasPorHoraOut)
+def ventas_por_hora(desde: str | None = None, hasta: str | None = None, solo_pagados: bool = True,
+                    db: Session = Depends(get_db), _: Usuario = Depends(solo_admin)):
+    d, h = _rango(desde, hasta)
+    return VentasPorHoraOut(desde=d.isoformat(), hasta=h.isoformat(), solo_pagados=solo_pagados,
+                            horas=estadisticas_service.ventas_por_hora(db, d, h, solo_pagados))
+
+
+@router.get("/estadisticas/pedidos-por-estado", response_model=PedidosPorEstadoOut)
+def pedidos_por_estado(desde: str | None = None, hasta: str | None = None,
+                       db: Session = Depends(get_db), _: Usuario = Depends(solo_admin)):
+    d, h = _rango(desde, hasta)
+    return PedidosPorEstadoOut(desde=d.isoformat(), hasta=h.isoformat(),
+                               **estadisticas_service.pedidos_por_estado(db, d, h))

@@ -9,6 +9,7 @@ from app.models import (DetallePedido, Ingrediente, Pedido, Personalizacion,
                         Producto, Usuario)
 from app.models.enums import Accion, EstadoCocina, EstadoPedido, TipoProducto
 from app.schemas.pedido import PedidoIn
+from app.config import MIN_POR_PIZZA
 from app.tiempo import ahora, rango_dia
 
 
@@ -158,8 +159,9 @@ def marcar_pizza_lista(db: Session, item_id: int) -> DetallePedido:
     return db.get(DetallePedido, item_id)
 
 
-
-def listar_pedidos(db: Session, estados: list[EstadoPedido], dia: date) -> list[Pedido]:
+# ---------------------------------------------------------------- recepción
+def listar_pedidos(db: Session, estados: list[EstadoPedido], dia: date,
+                   pagado: bool | None = None) -> list[Pedido]:
     inicio, fin = rango_dia(dia)
     consulta = (
         consulta_pedidos()
@@ -167,7 +169,53 @@ def listar_pedidos(db: Session, estados: list[EstadoPedido], dia: date) -> list[
                Pedido.fecha_creacion >= inicio, Pedido.fecha_creacion < fin)
         .order_by(Pedido.fecha_listo, Pedido.id)
     )
+    if pagado is not None:
+        consulta = consulta.where(Pedido.pagado.is_(pagado))
     return list(db.scalars(consulta).all())
+
+
+def pedidos_pendientes(db: Session) -> list[Pedido]:
+    """Pedidos que cocina todavía está preparando (cualquier día), el más antiguo primero."""
+    consulta = (
+        consulta_pedidos()
+        .where(Pedido.estado == EstadoPedido.pendiente)
+        .order_by(Pedido.fecha_creacion, Pedido.id)
+    )
+    return list(db.scalars(consulta).all())
+
+
+def espera_estimada_min(db: Session, pedido: Pedido) -> int:
+    """Minutos estimados: pizzas pendientes (de este pedido y de los anteriores) x MIN_POR_PIZZA."""
+    if pedido.estado != EstadoPedido.pendiente:
+        return 0
+    antes = (Pedido.fecha_creacion < pedido.fecha_creacion) | (
+        (Pedido.fecha_creacion == pedido.fecha_creacion) & (Pedido.id <= pedido.id))
+    pizzas = db.scalar(
+        select(func.coalesce(func.sum(DetallePedido.cantidad), 0))
+        .select_from(DetallePedido)
+        .join(Pedido, Pedido.id == DetallePedido.pedido_id)
+        .join(Producto, Producto.id == DetallePedido.producto_id)
+        .where(Producto.tipo == TipoProducto.pizza,
+               DetallePedido.estado_cocina == EstadoCocina.pendiente, antes)
+    )
+    return int(pizzas or 0) * MIN_POR_PIZZA
+
+
+def cobrar_pedido(db: Session, pedido_id: int) -> Pedido:
+    """Marca el pedido como pagado. Es un paso explícito de recepción, independiente de cocina."""
+    if db.get(Pedido, pedido_id) is None:
+        raise ApiError(404, "PEDIDO_NO_ENCONTRADO", f"No existe el pedido {pedido_id}")
+    resultado = db.execute(
+        update(Pedido)
+        .where(Pedido.id == pedido_id, Pedido.pagado.is_(False))
+        .values(pagado=True, fecha_pago=ahora())
+        .execution_options(synchronize_session=False)
+    )
+    if resultado.rowcount == 0:
+        db.rollback()
+        raise ApiError(409, "PEDIDO_YA_PAGADO", f"El pedido {pedido_id} ya fue cobrado")
+    db.commit()
+    return db.get(Pedido, pedido_id)
 
 
 def entregar_pedido(db: Session, pedido_id: int, usuario: Usuario) -> Pedido:
@@ -187,8 +235,9 @@ def entregar_pedido(db: Session, pedido_id: int, usuario: Usuario) -> Pedido:
     db.commit()
     return db.get(Pedido, pedido_id)
 
-    def historial_pedidos(db: Session, estados, desde, hasta, limite: int, offset: int):
-        filtros = []
+
+def historial_pedidos(db: Session, estados, desde, hasta, limite: int, offset: int):
+    filtros = []
     if estados:
         filtros.append(Pedido.estado.in_(estados))
     if desde:

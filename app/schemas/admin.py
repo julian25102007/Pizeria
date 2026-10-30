@@ -72,3 +72,52 @@ class EliminadoOut(BaseModel):
     id: int
     nombre: str
     activo: bool
+
+
+# ---------- datos para gráficas ----------
+class VentaDia(BaseModel):
+    fecha: str
+    num_pedidos: int
+    total: Dinero
+
+
+class VentasPorDiaOut(BaseModel):
+    desde: str
+    hasta: str
+    solo_pagados: bool
+    dias: list[VentaDia]
+
+
+class ProductoVendido(BaseModel):
+    id: int
+    nombre: str
+    unidades: int
+    ingresos: Dinero
+
+
+class ProductosVendidosOut(BaseModel):
+    desde: str
+    hasta: str
+    solo_pagados: bool
+    productos: list[ProductoVendido]
+
+
+class VentaHora(BaseModel):
+    hora: int
+    num_pedidos: int
+    total: Dinero
+
+
+class VentasPorHoraOut(BaseModel):
+    desde: str
+    hasta: str
+    solo_pagados: bool
+    horas: list[VentaHora]
+
+
+class PedidosPorEstadoOut(BaseModel):
+    desde: str
+    hasta: str
+    pendiente: int
+    listo: int
+    entregado: int
