@@ -187,8 +187,9 @@ def entregar_pedido(db: Session, pedido_id: int, usuario: Usuario) -> Pedido:
     db.commit()
     return db.get(Pedido, pedido_id)
 
-    def historial_pedidos(db: Session, estados, desde, hasta, limite: int, offset: int):
-        filtros = []
+
+def historial_pedidos(db: Session, estados, desde, hasta, limite: int, offset: int):
+    filtros = []
     if estados:
         filtros.append(Pedido.estado.in_(estados))
     if desde:

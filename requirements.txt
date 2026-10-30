@@ -7,3 +7,4 @@ python-dotenv
 bcrypt
 pyjwt
 python-multipart
+tzdata
