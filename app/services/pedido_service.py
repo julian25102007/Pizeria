@@ -183,13 +183,12 @@ def entregar_pedido(db: Session, pedido_id: int, usuario: Usuario) -> Pedido:
     if resultado.rowcount == 0:
         db.rollback()
         raise ApiError(409, "PEDIDO_NO_LISTO",
-                       f"El pedido {pedido_id} no está en estado 'listo' (solo se entrega lo que está listo)")
+                    f"El pedido {pedido_id} no está en estado 'listo' (solo se entrega lo que está listo)")
     db.commit()
     return db.get(Pedido, pedido_id)
 
-    def historial_pedidos(db: Session, estados: list[EstadoPedido], desde: date | None,
-                      hasta: date | None, limite: int, offset: int):
-    filtros = []
+    def historial_pedidos(db: Session, estados, desde, hasta, limite: int, offset: int):
+        filtros = []
     if estados:
         filtros.append(Pedido.estado.in_(estados))
     if desde:
