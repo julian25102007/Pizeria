@@ -229,3 +229,48 @@ def test_estadisticas_fecha(client, tokens):
                  "producto_mas_vendido": None}
     r = client.get("/api/admin/estadisticas?fecha=ayer", headers=a)
     assert r.status_code == 400 and codigo(r) == "FECHA_INVALIDA"
+
+
+# ------------------------------------------------------------------ cobro, pendientes y gráficas
+def test_cobro_y_pagados(client, tokens):
+    h = tokens["recepcion"]
+    p = client.post("/api/pedidos", json={"nombre_cliente": "Eva", "items": [{"producto_id": 8}]}).json()
+    r = client.patch(f"/api/pedidos/{p['id']}/cobrar", headers=h)
+    assert r.status_code == 200 and r.json()["pagado"] is True and r.json()["total"] == 20.0
+    r = client.patch(f"/api/pedidos/{p['id']}/cobrar", headers=h)
+    assert r.status_code == 409 and codigo(r) == "PEDIDO_YA_PAGADO"
+    assert client.patch("/api/pedidos/999/cobrar", headers=h).status_code == 404
+    pagados = client.get("/api/pedidos?pagado=true", headers=h).json()["pedidos"]
+    assert len(pagados) == 1 and pagados[0]["pagado"] is True
+    assert client.get("/api/pedidos?pagado=false", headers=h).json()["pedidos"] == []
+    assert client.patch(f"/api/pedidos/{p['id']}/cobrar", headers=tokens["cocina"]).status_code == 403
+
+
+def test_admin_consulta_pedidos_pendientes_y_espera(client, tokens):
+    from app.config import MIN_POR_PIZZA
+    assert client.get("/api/pedidos", headers=tokens["admin"]).status_code == 200
+    p = client.post("/api/pedidos", json=PEDIDO_ANA).json()
+    pend = client.get("/api/pedidos/pendientes", headers=tokens["recepcion"]).json()["pedidos"]
+    assert [x["id"] for x in pend] == [p["id"]]
+    est = client.get(f"/api/pedidos/{p['id']}/estado").json()
+    assert est["espera_estimada_min"] == MIN_POR_PIZZA and est["pagado"] is False
+    assert est["fecha_creacion"] and est["fecha_listo"] is None
+
+
+def test_estadisticas_para_graficas(client, tokens):
+    a, h = tokens["admin"], tokens["recepcion"]
+    p = client.post("/api/pedidos", json={"nombre_cliente": "Eva", "items": [{"producto_id": 7, "cantidad": 2}]}).json()
+    r = client.get("/api/admin/estadisticas/ventas-por-dia", headers=a).json()
+    assert len(r["dias"]) == 7 and sum(d["total"] for d in r["dias"]) == 0  # sin cobrar no hay ventas
+    client.patch(f"/api/pedidos/{p['id']}/cobrar", headers=h)
+    r = client.get("/api/admin/estadisticas/ventas-por-dia", headers=a).json()
+    assert sum(d["total"] for d in r["dias"]) == 50.0 and r["dias"][-1]["num_pedidos"] == 1
+    r = client.get("/api/admin/estadisticas/productos-vendidos", headers=a).json()["productos"][0]
+    assert r["nombre"] == "Refresco" and r["unidades"] == 2 and r["ingresos"] == 50.0
+    horas = client.get("/api/admin/estadisticas/ventas-por-hora", headers=a).json()["horas"]
+    assert len(horas) == 24 and sum(x["num_pedidos"] for x in horas) == 1
+    e = client.get("/api/admin/estadisticas/pedidos-por-estado", headers=a).json()
+    assert e["listo"] == 1 and e["pendiente"] == 0 and e["entregado"] == 0
+    r = client.get("/api/admin/estadisticas/ventas-por-dia?desde=2026-02-01&hasta=2026-01-01", headers=a)
+    assert r.status_code == 400 and codigo(r) == "RANGO_INVALIDO"
+    assert client.get("/api/admin/estadisticas/ventas-por-dia", headers=h).status_code == 403

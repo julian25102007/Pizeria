@@ -54,6 +54,10 @@ class PedidoEstadoOut(BaseModel):
     estado: EstadoPedido
     total: Dinero
     items: list[ItemEstado]
+    fecha_creacion: datetime
+    fecha_listo: datetime | None = None
+    pagado: bool = False
+    espera_estimada_min: int = 0  # 0 si el pedido ya está listo o entregado
 
 
 # ---------- cocina ----------
@@ -94,6 +98,8 @@ class PedidoListado(BaseModel):
     fecha_listo: datetime | None
     fecha_entrega: datetime | None
     items: list[ItemResumen]
+    pagado: bool = False
+    fecha_pago: datetime | None = None
 
 
 class PedidosOut(BaseModel):
@@ -108,3 +114,10 @@ class EntregaOut(BaseModel):
 class HistorialPedidosOut(BaseModel):
     total: int
     pedidos: list[PedidoListado]
+
+
+class CobroOut(BaseModel):
+    id: int
+    total: Dinero
+    pagado: bool
+    fecha_pago: datetime
