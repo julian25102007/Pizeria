@@ -46,12 +46,13 @@ def get_usuario_actual(
     return usuario
 
 
-def requiere_rol(rol: Rol):
-    """Uso: Depends(requiere_rol(Rol.cocinero)). Solo ese rol puede entrar."""
+def requiere_rol(*roles: Rol):
+    """Uso: Depends(requiere_rol(Rol.cocinero)). Solo esos roles pueden entrar."""
 
     def dependencia(usuario: Usuario = Depends(get_usuario_actual)) -> Usuario:
-        if usuario.rol != rol:
-            raise ApiError(403, "PERMISO_DENEGADO", f"Este endpoint es solo para el rol {rol.value}")
+        if usuario.rol not in roles:
+            nombres = " o ".join(r.value for r in roles)
+            raise ApiError(403, "PERMISO_DENEGADO", f"Este endpoint es solo para el rol {nombres}")
         return usuario
 
     return dependencia

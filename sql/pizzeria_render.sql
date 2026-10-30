@@ -46,6 +46,8 @@ CREATE TABLE pedidos (
     fecha_listo    DATETIME NULL,
     fecha_entrega  DATETIME NULL,
     entregado_por  INT NULL,
+    pagado         BOOLEAN NOT NULL DEFAULT FALSE,
+    fecha_pago     DATETIME NULL,
     FOREIGN KEY (entregado_por) REFERENCES usuarios(id),
     INDEX idx_pedidos_estado (estado),
     INDEX idx_pedidos_fecha (fecha_creacion)

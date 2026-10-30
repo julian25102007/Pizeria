@@ -1,7 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import ForeignKey, Numeric, String
+from sqlalchemy import ForeignKey, Numeric, String, false
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -24,6 +24,8 @@ class Pedido(Base):
     fecha_listo: Mapped[datetime | None] = mapped_column()
     fecha_entrega: Mapped[datetime | None] = mapped_column()
     entregado_por: Mapped[int | None] = mapped_column(ForeignKey("usuarios.id"))
+    pagado: Mapped[bool] = mapped_column(default=False, server_default=false())
+    fecha_pago: Mapped[datetime | None] = mapped_column()
 
     detalles: Mapped[list["DetallePedido"]] = relationship(
         back_populates="pedido", cascade="all, delete-orphan",
